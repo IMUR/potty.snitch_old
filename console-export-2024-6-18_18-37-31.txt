@@ -1,0 +1,28 @@
+The stylesheet http://localhost:3000/static/css/MainLayout.css was not loaded because its MIME type, “text/html”, is not “text/css”. localhost:3000
+Uncaught SyntaxError: expected expression, got '<' main.b03d559d.js:1:1
+Google Maps JavaScript API not loaded. Form.js:18:14
+Google Maps JavaScript API not loaded. Map.js:48:14
+Uncaught (in promise) InvalidValueError: initMap is not a function
+    wj https://maps.googleapis.com/maps/api/js?key=AIzaSyCU4dGjzQRlwYVR868Gjk_w95e5l8bQgy0&libraries=places&callback=initMap:356
+    yj https://maps.googleapis.com/maps/api/js?key=AIzaSyCU4dGjzQRlwYVR868Gjk_w95e5l8bQgy0&libraries=places&callback=initMap:227
+    lca https://maps.googleapis.com/maps/api/js?key=AIzaSyCU4dGjzQRlwYVR868Gjk_w95e5l8bQgy0&libraries=places&callback=initMap:322
+    mca https://maps.googleapis.com/maps/api/js?key=AIzaSyCU4dGjzQRlwYVR868Gjk_w95e5l8bQgy0&libraries=places&callback=initMap:321
+    promise callback*mca https://maps.googleapis.com/maps/api/js?key=AIzaSyCU4dGjzQRlwYVR868Gjk_w95e5l8bQgy0&libraries=places&callback=initMap:321
+    Load https://maps.googleapis.com/maps/api/js?key=AIzaSyCU4dGjzQRlwYVR868Gjk_w95e5l8bQgy0&libraries=places&callback=initMap:14
+    <anonymous> https://maps.googleapis.com/maps/api/js?key=AIzaSyCU4dGjzQRlwYVR868Gjk_w95e5l8bQgy0&libraries=places&callback=initMap:518
+    <anonymous> https://maps.googleapis.com/maps/api/js?key=AIzaSyCU4dGjzQRlwYVR868Gjk_w95e5l8bQgy0&libraries=places&callback=initMap:518
+js:356:1693
+Error: Minified React error #31; visit https://reactjs.org/docs/error-decoder.html?invariant=31&args[]=object%20with%20keys%20%7Bconverter%2C%20_key%2C%20type%2C%20firestore%7D for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    React 11
+    S scheduler.production.min.js:13
+    D scheduler.production.min.js:14
+    234 scheduler.production.min.js:14
+    Webpack 11
+react-dom.production.min.js:188:119
+Uncaught Error: Minified React error #31; visit https://reactjs.org/docs/error-decoder.html?invariant=31&args[]=object%20with%20keys%20%7Bconverter%2C%20_key%2C%20type%2C%20firestore%7D for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    React 11
+    S scheduler.production.min.js:13
+    D scheduler.production.min.js:14
+    234 scheduler.production.min.js:14
+    Webpack 11
+react-dom.production.min.js:135:59

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getUserLocation } from './location';
 
 const Map = ({ places }) => {
   const mapRef = useRef(null);
@@ -18,7 +19,7 @@ const Map = ({ places }) => {
     const loadGoogleMaps = () => {
       if (!window.google) {
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyCU4dGjzQRlwYVR868Gjk_w95e5l8bQgy0`;
         script.async = true;
         script.defer = true;
         script.addEventListener('load', () => {

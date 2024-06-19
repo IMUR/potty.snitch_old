@@ -1,8 +1,15 @@
-// src/components/Map.js
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
-const Map = ({ userLocation, places }) => {
+const Map = ({ places }) => {
   const mapRef = useRef(null);
+  const [userLocation, setUserLocation] = useState(null);
+
+  useEffect(() => {
+    // Assume this is an async function that fetches user location
+    getUserLocation().then(location => {
+      setUserLocation(location);
+    });
+  }, []);
 
   useEffect(() => {
     let infoWindow = null;
@@ -92,7 +99,9 @@ const Map = ({ userLocation, places }) => {
       });
     };
 
-    loadGoogleMaps();
+    if (userLocation) {
+      loadGoogleMaps();
+    }
   }, [userLocation, places]);
 
   const handleCenterUserLocation = () => {

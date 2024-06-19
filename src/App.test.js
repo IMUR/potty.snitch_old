@@ -1,38 +1,50 @@
+// App.test.js
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
+import { getFirestore, getDocs, collection } from 'firebase/firestore';
 import App from './App';
 
-// This is where the mocking code goes
-beforeEach(() => {
-  global.window.google = {
-    maps: {
-      Map: jest.fn(),
-      places: {
-        Autocomplete: jest.fn(),
-        // Mock other objects from the Google Maps Places API here...
-      },
-      // Mock other objects from the Google Maps JavaScript API here...
-    },
-  };
+jest.mock('firebase/firestore', () => ({
+  collection: jest.fn(),
+  getDocs: jest.fn(),
+}));
 
-  // Mocking the geolocation
-  const mockGeolocation = {
-    getCurrentPosition: jest.fn()
-      .mockImplementationOnce((success) => Promise.resolve(success({
-        coords: {
-          latitude: 51.1,
-          longitude: 45.3
-        }
-      })))
-  };
-  global.navigator.geolocation = mockGeolocation;
-});
+describe('App', () => {
+  it('renders the correct number of places', async () => {
+    const mockPlaces = [
+      { id: '1', place: 'Place 1' },
+      { id: '2', place: 'Place 2' },
+      { id: '3', place: 'Place 3' },
+    ];
 
-test('renders learn react link', () => {
-  const mockUserLocation = { lat: 40.748817, lng: -73.985428 }; // Replace with appropriate values
+    getDocs.mockResolvedValueOnce({
+      docs: mockPlaces.map((place) => ({
+        id: place.id,
+        data: () => place,
+      })),
+    });
 
-  render(<App userLocation={mockUserLocation} />);
+    const { getAllByRole } = render(<App />);
 
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+    await waitFor(() => expect(getDocs).toHaveBeenCalled());
+
+    // Assuming places are rendered as list items
+    const listItems = getAllByRole('listitem');
+    expect(listItems).toHaveLength(mockPlaces.length);
+  });
+
+  it('logs an error when there is an error getting the user location', () => {
+    const mockGeolocation = {
+      getCurrentPosition: jest.fn().mockImplementationOnce((success, error) =>
+        Promise.resolve(error(new Error('Geolocation is not supported by this browser.')))
+      ),
+    };
+    global.navigator.geolocation = mockGeolocation;
+
+    const consoleSpy = jest.spyOn(console, 'error');
+
+    render(<App />);
+
+    expect(consoleSpy).toHaveBeenCalledWith('Error getting user location:', expect.any(Error));
+  });
 });

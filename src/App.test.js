@@ -29,7 +29,10 @@ beforeEach(() => {
 });
 
 test('renders learn react link', () => {
-  render(<App />);
+  const mockUserLocation = { lat: 40.748817, lng: -73.985428 }; // Replace with appropriate values
+
+  render(<App userLocation={mockUserLocation} />);
+
   const linkElement = screen.getByText(/learn react/i);
   expect(linkElement).toBeInTheDocument();
 });

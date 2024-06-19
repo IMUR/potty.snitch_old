@@ -40,7 +40,7 @@ const Form = () => {
         console.error('Google Maps JavaScript API not loaded.');
         return;
       }
-
+    
       const autocomplete = new window.google.maps.places.Autocomplete(
         document.getElementById('autocomplete'),
         {
@@ -48,23 +48,27 @@ const Form = () => {
           componentRestrictions: { country: 'us' }
         }
       );
-
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        if (place.geometry) {
-          const address = place.formatted_address;
-          const location = {
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng()
-          };
-          setFormData(prevData => ({
-            ...prevData,
-            pottyAddress: address,
-            location: location
-          }));
-        }
-      });
-
+    
+      if (autocomplete && typeof autocomplete.addListener === 'function') {
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          if (place.geometry) {
+            const address = place.formatted_address;
+            const location = {
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng()
+            };
+            setFormData(prevData => ({
+              ...prevData,
+              pottyAddress: address,
+              location: location
+            }));
+          }
+        });
+      } else {
+        console.error('autocomplete or addListener is not defined');
+      }
+    
       autocompleteRef.current = autocomplete;
     };
 

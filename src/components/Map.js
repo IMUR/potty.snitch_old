@@ -5,14 +5,32 @@ const Map = ({ userLocation, places }) => {
   const mapRef = useRef(null);
 
   useEffect(() => {
-    if (!window.google || !userLocation) {
-      console.error('Google Maps JavaScript API or user location is not loaded.');
-      return;
-    }
+    let infoWindow = null;
+    let newMap = null;
+
+    const loadGoogleMaps = () => {
+      if (!window.google) {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY`;
+        script.async = true;
+        script.defer = true;
+        script.addEventListener('load', () => {
+          initMap();
+        });
+        document.body.appendChild(script);
+      } else {
+        initMap();
+      }
+    };
 
     const initMap = () => {
+      if (!userLocation) {
+        console.error('User location is not available.');
+        return;
+      }
+
       const mapDiv = mapRef.current;
-      const newMap = new window.google.maps.Map(mapDiv, {
+      newMap = new window.google.maps.Map(mapDiv, {
         center: userLocation,
         zoom: 15,
         mapTypeControl: false,
@@ -37,16 +55,15 @@ const Map = ({ userLocation, places }) => {
         title: 'You are here!',
       });
 
-      let infoWindow = null;
-
       // Add markers for each place
       places.forEach(place => {
         const marker = new window.google.maps.Marker({
           position: place.location,
           map: newMap,
-          title: place.pottyName,
+          title: place.name,
         });
 
+        // Add an info window for each marker
         const placeInfoWindow = new window.google.maps.InfoWindow({
           content: `
             <div>
@@ -75,12 +92,7 @@ const Map = ({ userLocation, places }) => {
       });
     };
 
-    if (document.readyState === 'complete') {
-      initMap();
-    } else {
-      window.addEventListener('load', initMap);
-      return () => window.removeEventListener('load', initMap);
-    }
+    loadGoogleMaps();
   }, [userLocation, places]);
 
   const handleCenterUserLocation = () => {

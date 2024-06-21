@@ -2,7 +2,6 @@ import React, { useEffect, useState, useContext } from 'react';
 import { db } from '../firebase'; // Ensure correct path
 import { collection, getDocs } from 'firebase/firestore';
 import { LocationContext } from '../App'; // Import context
-import '../css/MainLayout.css'; // Ensure correct path to CSS
 
 const List = () => {
   const [locations, setLocations] = useState([]);

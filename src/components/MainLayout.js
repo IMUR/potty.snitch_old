@@ -2,7 +2,6 @@ import React from 'react';
 import List from './List'; // Ensure correct path
 import Map from './Map'; // Ensure correct path
 import Form from './Form'; // Import the Form component
-import '../css/MainLayout.css'; // Ensure correct path to CSS
 
 const MainLayout = () => {
   return (

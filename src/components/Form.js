@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../firebase'; // Ensure the correct path to your firebase.js
-import '../css/MainLayout.css'; // Make sure to create and style this CSS file as needed
-import '../css/Autocomplete.css'; // Ensure your custom autocomplete styling is loaded
 
 const Form = () => {
   const [pottyName, setPottyName] = useState('');

@@ -1,52 +1,30 @@
 import React, { useEffect, useRef, useState, useContext } from 'react';
-import { db } from '../firebase'; // Ensure correct path
+import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
-import { LocationContext } from '../App'; // Import context
+import { LocationContext } from '../App';
 
 const Map = () => {
   const mapRef = useRef(null);
   const [locations, setLocations] = useState([]);
   const [map, setMap] = useState(null);
-  const [markers, setMarkers] = useState([]);
-  const { selectedLocation } = useContext(LocationContext); // Use context
+  const [markers, setMarkers] = useState([]); // Initialize markers state
+  const { selectedLocation } = useContext(LocationContext);
   const userMarkerRef = useRef(null);
   const infoWindowRef = useRef(null);
 
   useEffect(() => {
-    const loadMap = (location) => {
+    if (!window.google || !window.google.maps) return;
+
+    const initializeMap = (location) => {
       const map = new window.google.maps.Map(mapRef.current, {
         center: location,
         zoom: 12,
         disableDefaultUI: true,
         gestureHandling: 'greedy',
-        clickableIcons: false,
-        styles: [
-          {
-            featureType: 'poi',
-            stylers: [{ visibility: 'off' }],
-          },
-          {
-            featureType: 'transit',
-            elementType: 'labels.icon',
-            stylers: [{ visibility: 'off' }],
-          },
-          {
-            featureType: 'road',
-            stylers: [{ visibility: 'simplified' }],
-          },
-          {
-            featureType: 'water',
-            stylers: [{ visibility: 'simplified' }],
-          },
-          {
-            featureType: 'landscape',
-            stylers: [{ visibility: 'simplified' }],
-          },
-        ],
       });
       setMap(map);
 
-      userMarkerRef.current = new window.google.maps.Marker({
+      userMarkerRef.current = new window.google.maps.marker.AdvancedMarkerElement({
         position: location,
         map,
         title: 'You are here',
@@ -63,34 +41,20 @@ const Map = () => {
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const initialLocation = { lat: latitude, lng: longitude };
-          loadMap(initialLocation);
-        },
-        (error) => console.error('Error getting user location:', error),
-        { enableHighAccuracy: true }
+        ({ coords }) => initializeMap({ lat: coords.latitude, lng: coords.longitude }),
+        () => initializeMap({ lat: 37.7749, lng: -122.4194 })
       );
     } else {
-      alert('Geolocation is not supported by this browser.');
-      const defaultLocation = { lat: 37.7749, lng: -122.4194 };
-      loadMap(defaultLocation);
+      initializeMap({ lat: 37.7749, lng: -122.4194 });
     }
   }, []);
 
   useEffect(() => {
     if (map) {
       const fetchLocations = async () => {
-        const querySnapshot = await getDocs(collection(db, 'PottyCollection'));
-        const locationsData = querySnapshot.docs
-          .filter(doc => doc.id !== 'rpx4ZIj1WcMcpbxu962z')
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-        setLocations(locationsData);
+        const snapshot = await getDocs(collection(db, 'PottyCollection'));
+        setLocations(snapshot.docs.map(doc => doc.data()));
       };
-
       fetchLocations();
     }
   }, [map]);
@@ -98,12 +62,9 @@ const Map = () => {
   useEffect(() => {
     if (map && locations.length) {
       const newMarkers = locations.map((location) => {
-        if (location.location && location.location.latitude && location.location.longitude) {
+        if (location.location?.latitude && location.location?.longitude) {
           const marker = new window.google.maps.Marker({
-            position: {
-              lat: location.location.latitude,
-              lng: location.location.longitude,
-            },
+            position: { lat: location.location.latitude, lng: location.location.longitude },
             map,
             title: location.pottyName,
           });
@@ -112,19 +73,9 @@ const Map = () => {
             if (infoWindowRef.current) {
               infoWindowRef.current.close();
             }
-
             infoWindowRef.current = new window.google.maps.InfoWindow({
-              content: `
-                <div class="custom-info-window">
-                  <h3>${location.pottyName}</h3>
-                  <p>${location.pottyAddress}</p>
-                  <p>${location.pottyNotes}</p>
-                </div>
-              `,
-              disableAutoPan: false,
-              pixelOffset: new window.google.maps.Size(0, -30),
+              content: `<div><h3>${location.pottyName}</h3><p>${location.pottyAddress}</p></div>`,
             });
-
             infoWindowRef.current.open(map, marker);
           });
 
@@ -133,7 +84,7 @@ const Map = () => {
         return null;
       }).filter(marker => marker !== null);
 
-      setMarkers(newMarkers);
+      setMarkers(newMarkers); // Update state with new markers
     }
   }, [map, locations]);
 

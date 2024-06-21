@@ -1,45 +1,39 @@
 import { useEffect, useState } from 'react';
 
-const useLoadGoogleMaps = (libraries = []) => {
+const useLoadGoogleMaps = (apiKey, libraries) => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [loadError, setLoadError] = useState(null);
 
     useEffect(() => {
-        const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
-        if (!apiKey) {
-            console.error('Google Maps API key is missing. Please add it to your .env file.');
-            setLoadError('API key is missing');
-            return;
-        }
+        const scriptId = 'google-maps-api'; // Define scriptId here
 
-        const scriptId = 'google-maps-api';
+        const loadScript = () => {
+            if (document.getElementById(scriptId)) {
+                setIsLoaded(true);
+                return;
+            }
 
-        if (document.getElementById(scriptId)) {
-            setIsLoaded(true);
-            return;
-        }
+            const script = document.createElement('script');
+            script.id = scriptId;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=${libraries.join(',')}`;
+            script.async = true;
+            script.defer = true;
 
-        const script = document.createElement('script');
-        script.id = scriptId;
-        // Ensure libraries is an array
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=${Array.isArray(libraries) ? libraries.join(',') : ''}`;
-        script.async = true;
-        script.defer = true;
+            script.onload = () => setIsLoaded(true);
+            script.onerror = (error) => setLoadError(error);
 
-        script.onload = () => {
-            setIsLoaded(true);
+            document.body.appendChild(script);
         };
 
-        script.onerror = (error) => {
-            setLoadError(error);
-        };
-
-        document.body.appendChild(script);
+        loadScript();
 
         return () => {
-            document.body.removeChild(script);
+            const script = document.getElementById(scriptId);
+            if (script) {
+                document.body.removeChild(script);
+            }
         };
-    }, [libraries]);
+    }, [apiKey, libraries]);
 
     return { isLoaded, loadError };
 };

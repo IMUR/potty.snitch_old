@@ -1,47 +1,38 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { db } from '../firebase'; // Ensure correct path
+import React, { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { LocationContext } from '../App'; // Import context
+import { db } from '../firebase';
 
 const List = () => {
-  const [locations, setLocations] = useState([]);
-  const { selectedLocation, setSelectedLocation } = useContext(LocationContext); // Use context
+  const [pottyLocations, setPottyLocations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchLocations = async () => {
+    const fetchData = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'PottyCollection'));
-        const locationsData = querySnapshot.docs
-          .filter(doc => doc.id !== 'rpx4ZIj1WcMcpbxu962z') // Filter out the template document
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-        setLocations(locationsData);
-      } catch (error) {
-        console.error('Error fetching locations:', error);
+        const snapshot = await getDocs(collection(db, 'PottyCollection'));
+        setPottyLocations(snapshot.docs.map(doc => doc.data()));
+      } catch (err) {
+        setError('Failed to load data');
+      } finally {
+        setLoading(false);
       }
     };
-
-    fetchLocations();
+    fetchData();
   }, []);
 
-  const handleSelect = (location) => {
-    setSelectedLocation(location);
-  };
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>{error}</p>;
 
   return (
     <div className="list-container">
-      {locations.map((location) => (
-        <div
-          key={location.id}
-          className={`list-item ${selectedLocation && selectedLocation.id === location.id ? 'selected' : ''}`}
-          onClick={() => handleSelect(location)}
-        >
+      {pottyLocations.map((location, index) => (
+        <div key={index} className="list-item">
           <h3>{location.pottyName}</h3>
           <p>{location.pottyAddress}</p>
           <p>{location.pottyRule}</p>
           <p>{location.pottyNotes}</p>
+          <p>{location.pottyType}</p>
         </div>
       ))}
     </div>

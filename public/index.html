@@ -1,21 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Potty Snitch</title>
-  <link rel="stylesheet" href="/css/MainLayout.css">
-  <link rel="stylesheet" href="/css/App.css">
-  <link rel="stylesheet" href="/css/Autocomplete.css">
-  <link rel="stylesheet" href="/css/tailwind.css">
-  <link rel="stylesheet" href="/css/index.css">
-  <link rel="stylesheet" href="/css/output.css">
+  <!-- Ensure CSS files are loaded first -->
+  <link rel="stylesheet" href="%PUBLIC_URL%/css/MainLayout.css">
+  <link rel="stylesheet" href="%PUBLIC_URL%/css/App.css">
+  <link rel="stylesheet" href="%PUBLIC_URL%/css/Autocomplete.css">
+  <link rel="stylesheet" href="%PUBLIC_URL%/css/tailwind.css">
+  <link rel="stylesheet" href="%PUBLIC_URL%/css/index.css">
+  <link rel="stylesheet" href="%PUBLIC_URL%/css/output.css">
 </head>
 
 <body>
   <div id="root"></div>
-  <script async defer
-    src={`https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&libraries=places`}></script>
-
+  <!-- Google Maps API loaded via JavaScript in App.js to ensure async loading -->
 </body>
+
 </html>

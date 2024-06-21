@@ -15,10 +15,7 @@ const Form = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const inputRef = useRef(null);
 
-  const { isLoaded, loadError } = useLoadGoogleMaps(
-    process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
-    ['places']
-  );
+  const { isLoaded, loadError } = useLoadGoogleMaps(['places']);
 
   useEffect(() => {
     if (loadError) {
@@ -26,7 +23,7 @@ const Form = () => {
       return;
     }
 
-    if (isLoaded) {
+    if (isLoaded && window.google && window.google.maps && window.google.maps.places) {
       const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current);
       autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();

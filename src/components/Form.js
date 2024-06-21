@@ -1,171 +1,184 @@
-// src/components/Form.js
 import React, { useState, useEffect, useRef } from 'react';
-import { addDoc, collection, getDocs } from 'firebase/firestore';
-import { firestoreDb } from '../firebase';
+import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { db } from '../firebase'; // Ensure the correct path to your firebase.js
+import '../css/MainLayout.css'; // Make sure to create and style this CSS file as needed
+import '../css/Autocomplete.css'; // Ensure your custom autocomplete styling is loaded
 
 const Form = () => {
-  const [formData, setFormData] = useState({
-    pottyName: '',
-    pottyAddress: '',
-    pottyRule: '',
-    pottyType: '',
-    pottyNotes: '',
-    location: { lat: null, lng: null }
-  });
-
+  const [pottyName, setPottyName] = useState('');
+  const [pottyAddress, setPottyAddress] = useState('');
+  const [pottyRule, setPottyRule] = useState('');
   const [pottyRules, setPottyRules] = useState([]);
+  const [pottyNotes, setPottyNotes] = useState('');
+  const [pottyType, setPottyType] = useState('');
   const [pottyTypes, setPottyTypes] = useState([]);
-  const autocompleteRef = useRef(null);
+  const [geocodeResult, setGeocodeResult] = useState(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
-    // Fetch Potty Rules
+    if (!window.google) {
+      console.error('Google Maps JavaScript API not loaded.');
+      return;
+    }
+
+    const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current);
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (place.formatted_address) {
+        setPottyAddress(place.formatted_address);
+        geocodeAddress(place.formatted_address);
+      } else {
+        console.error('Place does not contain formatted address');
+      }
+    });
+  }, []);
+
+  const geocodeAddress = (address) => {
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode({ address }, (results, status) => {
+      if (status === 'OK' && results[0]) {
+        const location = results[0].geometry.location;
+        setGeocodeResult({
+          latitude: location.lat(),
+          longitude: location.lng(),
+        });
+      } else {
+        console.error('Geocode was not successful for the following reason: ' + status);
+        setGeocodeResult(null);
+      }
+    });
+  };
+
+  useEffect(() => {
     const fetchPottyRules = async () => {
-      const rulesSnapshot = await getDocs(collection(firestoreDb, 'PottyRules'));
-      const rulesData = rulesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setPottyRules(rulesData);
+      try {
+        const querySnapshot = await getDocs(collection(db, 'PottyRules'));
+        const rules = querySnapshot.docs.map((doc) => doc.data().pottyRule);
+        setPottyRules(rules);
+      } catch (error) {
+        console.error('Error fetching potty rules:', error);
+      }
     };
 
-    // Fetch Potty Types
     const fetchPottyTypes = async () => {
-      const typesSnapshot = await getDocs(collection(firestoreDb, 'PottyTypes'));
-      const typesData = typesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setPottyTypes(typesData);
+      try {
+        const querySnapshot = await getDocs(collection(db, 'PottyTypes'));
+        const types = querySnapshot.docs.map((doc) => doc.data().pottyType);
+        setPottyTypes(types);
+      } catch (error) {
+        console.error('Error fetching potty types:', error);
+      }
     };
 
     fetchPottyRules();
     fetchPottyTypes();
-
-    const initAutocomplete = () => {
-      if (!window.google) {
-        console.error('Google Maps JavaScript API not loaded.');
-        return;
-      }
-    
-      const autocomplete = new window.google.maps.places.Autocomplete(
-        document.getElementById('autocomplete'),
-        {
-          types: ['establishment', 'address'],
-          componentRestrictions: { country: 'us' }
-        }
-      );
-    
-      if (autocomplete && typeof autocomplete.addListener === 'function') {
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          if (place.geometry) {
-            const address = place.formatted_address;
-            const location = {
-              lat: place.geometry.location.lat(),
-              lng: place.geometry.location.lng()
-            };
-            setFormData(prevData => ({
-              ...prevData,
-              pottyAddress: address,
-              location: location
-            }));
-          }
-        });
-      } else {
-        console.error('autocomplete or addListener is not defined');
-      }
-    
-      autocompleteRef.current = autocomplete;
-    };
-
-    if (document.readyState === 'complete') {
-      initAutocomplete();
-    } else {
-      window.addEventListener('load', initAutocomplete);
-      return () => window.removeEventListener('load', initAutocomplete);
-    }
   }, []);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!geocodeResult) {
+      console.error('No geocode result available.');
+      return;
+    }
+
     try {
-      await addDoc(collection(firestoreDb, 'PottyCollection'), formData);
-      alert('Potty information submitted successfully!');
-    } catch (error) {
-      console.error('Error adding document: ', error);
+      await addDoc(collection(db, 'PottyCollection'), {
+        pottyName,
+        pottyAddress,
+        pottyRule,
+        pottyNotes,
+        pottyType,
+        location: {
+          latitude: geocodeResult.latitude,
+          longitude: geocodeResult.longitude,
+        },
+      });
+      console.log('Document written successfully!');
+      setPottyName('');
+      setPottyAddress('');
+      setPottyRule('');
+      setPottyNotes('');
+      setPottyType('');
+      setGeocodeResult(null);
+    } catch (e) {
+      console.error('Error adding document: ', e);
     }
   };
 
   return (
-    <form className="form-container" onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="form-container">
       <div className="form-group">
-        <label>Potty Name</label>
+        <label htmlFor="pottyName">Potty Name:</label>
         <input
           type="text"
-          name="pottyName"
-          value={formData.pottyName}
-          onChange={handleInputChange}
-          placeholder="Enter potty name"
+          id="pottyName"
+          value={pottyName}
+          onChange={(e) => setPottyName(e.target.value)}
+          className="form-input"
+          placeholder="Enter Potty Name"
+          required
         />
       </div>
-
       <div className="form-group">
-        <label>Potty Address</label>
+        <label htmlFor="pottyAddress">Potty Address:</label>
         <input
-          id="autocomplete"
           type="text"
-          name="pottyAddress"
-          value={formData.pottyAddress}
-          onChange={handleInputChange}
-          placeholder="Enter potty address or POI"
+          id="pottyAddress"
+          ref={inputRef}
+          value={pottyAddress}
+          onChange={(e) => setPottyAddress(e.target.value)}
+          className="form-input"
+          placeholder="Enter Potty Address"
+          required
         />
       </div>
-
       <div className="form-group">
-        <label>Potty Type</label>
+        <label htmlFor="pottyRule">Potty Rule:</label>
         <select
-          name="pottyType"
-          value={formData.pottyType}
-          onChange={handleInputChange}
+          id="pottyRule"
+          value={pottyRule}
+          onChange={(e) => setPottyRule(e.target.value)}
+          className="form-select"
+          required
         >
-          <option value="">Select type</option>
-          {pottyTypes.map(type => (
-            <option key={type.id} value={type.pottyType}>
-              {type.pottyType}
+          <option value="">Select a rule</option>
+          {pottyRules.map((rule, index) => (
+            <option key={index} value={rule}>
+              {rule}
             </option>
           ))}
         </select>
       </div>
-
       <div className="form-group">
-        <label>Potty Rule</label>
+        <label htmlFor="pottyNotes">Potty Notes:</label>
+        <input
+          type="text"
+          id="pottyNotes"
+          value={pottyNotes}
+          onChange={(e) => setPottyNotes(e.target.value)}
+          className="form-input"
+          placeholder="Enter Potty Notes"
+        />
+      </div>
+      <div className="form-group">
+        <label htmlFor="pottyType">Potty Type:</label>
         <select
-          name="pottyRule"
-          value={formData.pottyRule}
-          onChange={handleInputChange}
+          id="pottyType"
+          value={pottyType}
+          onChange={(e) => setPottyType(e.target.value)}
+          className="form-select"
+          required
         >
-          <option value="">Select rule</option>
-          {pottyRules.map(rule => (
-            <option key={rule.id} value={rule.pottyRule}>
-              {rule.pottyRule}
+          <option value="">Select a type</option>
+          {pottyTypes.map((type, index) => (
+            <option key={index} value={type}>
+              {type}
             </option>
           ))}
         </select>
       </div>
-
-      <div className="form-group">
-        <label>Potty Notes</label>
-        <textarea
-          name="pottyNotes"
-          value={formData.pottyNotes}
-          onChange={handleInputChange}
-          placeholder="Enter additional notes"
-        />
-      </div>
-
-      <button type="submit">Submit</button>
+      <button type="submit" className="form-button">Submit</button>
     </form>
   );
 };

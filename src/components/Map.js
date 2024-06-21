@@ -1,139 +1,182 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { getUserLocation } from './location';
+import React, { useEffect, useRef, useState, useContext } from 'react';
+import { db } from '../firebase'; // Ensure correct path
+import { collection, getDocs } from 'firebase/firestore';
+import { LocationContext } from '../App'; // Import context
+import '../css/MainLayout.css'; // Ensure correct path to CSS
 
-const Map = ({ places }) => {
+const Map = () => {
   const mapRef = useRef(null);
-  const [userLocation, setUserLocation] = useState(null);
+  const [locations, setLocations] = useState([]);
+  const [map, setMap] = useState(null);
+  const [markers, setMarkers] = useState([]);
+  const { selectedLocation } = useContext(LocationContext); // Use context
+  const userMarkerRef = useRef(null);
+  const infoWindowRef = useRef(null);
 
   useEffect(() => {
-    // Assume this is an async function that fetches user location
-    getUserLocation().then(location => {
-      setUserLocation(location);
-    });
-  }, []);
-
-  useEffect(() => {
-    let infoWindow = null;
-    let newMap = null;
-
-    const loadGoogleMaps = () => {
-      if (!window.google) {
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyCU4dGjzQRlwYVR868Gjk_w95e5l8bQgy0`;
-        script.async = true;
-        script.defer = true;
-        script.addEventListener('load', () => {
-          initMap();
-        });
-        document.body.appendChild(script);
-      } else {
-        initMap();
-      }
-    };
-
-    const initMap = () => {
-      if (!userLocation) {
-        console.error('User location is not available.');
-        return;
-      }
-
-      const mapDiv = mapRef.current;
-      newMap = new window.google.maps.Map(mapDiv, {
-        center: userLocation,
-        zoom: 15,
-        mapTypeControl: false,
-        streetViewControl: false,
-        zoomControl: true,
+    const loadMap = (location) => {
+      const map = new window.google.maps.Map(mapRef.current, {
+        center: location,
+        zoom: 12,
+        disableDefaultUI: true,
+        gestureHandling: 'greedy',
+        clickableIcons: false,
         styles: [
           {
             featureType: 'poi',
-            stylers: [{ visibility: 'off' }]
+            stylers: [{ visibility: 'off' }],
           },
           {
-            featureType: 'poi.business',
-            stylers: [{ visibility: 'off' }]
-          }
-        ]
+            featureType: 'transit',
+            elementType: 'labels.icon',
+            stylers: [{ visibility: 'off' }],
+          },
+          {
+            featureType: 'road',
+            stylers: [{ visibility: 'simplified' }],
+          },
+          {
+            featureType: 'water',
+            stylers: [{ visibility: 'simplified' }],
+          },
+          {
+            featureType: 'landscape',
+            stylers: [{ visibility: 'simplified' }],
+          },
+        ],
+      });
+      setMap(map);
+
+      userMarkerRef.current = new window.google.maps.Marker({
+        position: location,
+        map,
+        title: 'You are here',
       });
 
-      // Add a user location marker
-      new window.google.maps.Marker({
-        position: userLocation,
-        map: newMap,
-        title: 'You are here!',
-      });
+      document.querySelector('.map-container').classList.add('map-loaded');
 
-      // Add markers for each place
-      places.forEach(place => {
-        const marker = new window.google.maps.Marker({
-          position: place.location,
-          map: newMap,
-          title: place.name,
-        });
-
-        // Add an info window for each marker
-        const placeInfoWindow = new window.google.maps.InfoWindow({
-          content: `
-            <div>
-              <h3>${place.pottyName}</h3>
-              <p>${place.pottyAddress}</p>
-              <p>Rule: ${place.pottyRule}</p>
-              <p>Notes: ${place.pottyNotes}</p>
-            </div>
-          `,
-        });
-
-        marker.addListener('click', () => {
-          if (infoWindow) {
-            infoWindow.close();
-          }
-          placeInfoWindow.open(newMap, marker);
-          infoWindow = placeInfoWindow;
-        });
-      });
-
-      newMap.addListener('click', () => {
-        if (infoWindow) {
-          infoWindow.close();
-          infoWindow = null;
+      map.addListener('click', () => {
+        if (infoWindowRef.current) {
+          infoWindowRef.current.close();
         }
       });
     };
 
-    if (userLocation) {
-      loadGoogleMaps();
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const initialLocation = { lat: latitude, lng: longitude };
+          loadMap(initialLocation);
+        },
+        (error) => console.error('Error getting user location:', error),
+        { enableHighAccuracy: true }
+      );
+    } else {
+      alert('Geolocation is not supported by this browser.');
+      const defaultLocation = { lat: 37.7749, lng: -122.4194 };
+      loadMap(defaultLocation);
     }
-  }, [userLocation, places]);
+  }, []);
 
-  const handleCenterUserLocation = () => {
-    if (mapRef.current && userLocation) {
-      const mapInstance = new window.google.maps.Map(mapRef.current, {
-        center: userLocation,
-        zoom: 15,
-      });
-      mapInstance.setCenter(userLocation);
+  useEffect(() => {
+    if (map) {
+      const fetchLocations = async () => {
+        const querySnapshot = await getDocs(collection(db, 'PottyCollection'));
+        const locationsData = querySnapshot.docs
+          .filter(doc => doc.id !== 'rpx4ZIj1WcMcpbxu962z')
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+        setLocations(locationsData);
+      };
+
+      fetchLocations();
+    }
+  }, [map]);
+
+  useEffect(() => {
+    if (map && locations.length) {
+      const newMarkers = locations.map((location) => {
+        if (location.location && location.location.latitude && location.location.longitude) {
+          const marker = new window.google.maps.Marker({
+            position: {
+              lat: location.location.latitude,
+              lng: location.location.longitude,
+            },
+            map,
+            title: location.pottyName,
+          });
+
+          marker.addListener('click', () => {
+            if (infoWindowRef.current) {
+              infoWindowRef.current.close();
+            }
+
+            infoWindowRef.current = new window.google.maps.InfoWindow({
+              content: `
+                <div class="custom-info-window">
+                  <h3>${location.pottyName}</h3>
+                  <p>${location.pottyAddress}</p>
+                  <p>${location.pottyNotes}</p>
+                </div>
+              `,
+              disableAutoPan: false,
+              pixelOffset: new window.google.maps.Size(0, -30),
+            });
+
+            infoWindowRef.current.open(map, marker);
+          });
+
+          return { marker, location };
+        }
+        return null;
+      }).filter(marker => marker !== null);
+
+      setMarkers(newMarkers);
+    }
+  }, [map, locations]);
+
+  useEffect(() => {
+    if (map && selectedLocation) {
+      const selectedMarker = markers.find(markerObj => markerObj.location.id === selectedLocation.id);
+      if (selectedMarker) {
+        const marker = selectedMarker.marker;
+
+        // Programmatically trigger the click event on the marker
+        window.google.maps.event.trigger(marker, 'click');
+        map.setCenter(marker.getPosition());
+      }
+    }
+  }, [selectedLocation, map, markers]);
+
+  const handleCenterOnUser = () => {
+    if (userMarkerRef.current) {
+      map.setCenter(userMarkerRef.current.getPosition());
+    } else if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const userLocation = { lat: latitude, lng: longitude };
+          map.setCenter(userLocation);
+        },
+        (error) => console.error('Error getting user location:', error),
+        { enableHighAccuracy: true }
+      );
+    } else {
+      alert('Geolocation is not supported by this browser.');
     }
   };
 
   return (
-    <div className="map-container" style={{ position: 'relative', height: '100%', width: '100%' }}>
-      <div id="map" ref={mapRef} style={{ height: '100%', width: '100%' }}></div>
-      <button 
-        onClick={handleCenterUserLocation} 
-        style={{
-          position: 'absolute', 
-          bottom: '10px', 
-          right: '10px', 
-          padding: '10px',
-          backgroundColor: '#007bff', 
-          color: '#fff', 
-          border: 'none', 
-          borderRadius: '4px',
-          cursor: 'pointer'
-        }}
-      >
-        Center on User
-      </button>
+    <div className="map-container">
+      <div ref={mapRef} className="map" />
+      {map && (
+        <button onClick={handleCenterOnUser} className="center-button">
+          Me
+        </button>
+      )}
     </div>
   );
 };

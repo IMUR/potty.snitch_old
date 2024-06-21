@@ -1,22 +1,26 @@
-// src/components/MainLayout.js
 import React from 'react';
-import Map from './Map';
-import List from './List';
-import Form from './Form';
+import List from './List'; // Ensure correct path
+import Map from './Map'; // Ensure correct path
+import Form from './Form'; // Import the Form component
+import '../css/MainLayout.css'; // Ensure correct path to CSS
 
-const MainLayout = ({ userLocation, places }) => {
+const MainLayout = () => {
   return (
     <div className="main-container">
       <div className="left-column">
-        <div className="row">
-          <Form />
+        <div className="row form-row">
+          <div className="form-container">
+            <Form />
+          </div>
         </div>
-        <div className="row map-container">
-          <Map userLocation={userLocation} places={places} />
+        <div className="row map-row">
+          <div className="map-container">
+            <Map />
+          </div>
         </div>
       </div>
       <div className="right-column">
-        <List places={places} />
+        <List />
       </div>
     </div>
   );

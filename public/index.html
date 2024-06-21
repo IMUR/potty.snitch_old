@@ -4,24 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Potty Snitch</title>
-  <link rel="stylesheet" href="/static/css/MainLayout.css">
+  <link rel="stylesheet" href="%PUBLIC_URL%/css/MainLayout.css">
 </head>
 <body>
   <div id="root"></div>
-
-  <!-- Google Maps JavaScript API, with callback to initMap -->
   <script async defer
-          src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCU4dGjzQRlwYVR868Gjk_w95e5l8bQgy0&libraries=places&callback=initMap">
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAbVsGY-kU4S0-P1wNtDjYSD82a6ThXREk&libraries=places&callback=initMap">
   </script>
-
   <script>
     function initMap() {
-      // This function is required by the Google Maps JavaScript API
       console.log('Google Maps API loaded.');
+      // You can initialize your map here or leave it empty
     }
   </script>
-
-  <!-- Load the main JavaScript file -->
-  <script defer src="/static/js/main.js"></script>
 </body>
 </html>

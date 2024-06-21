@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, getDocs, addDoc } from 'firebase/firestore';
-import { db } from '../firebase'; // Ensure the correct path to your firebase.js
+import { db } from '../firebase';
+import useLoadGoogleMaps from '../hooks/useLoadGoogleMaps';
 
 const Form = () => {
   const [pottyName, setPottyName] = useState('');
@@ -11,25 +12,33 @@ const Form = () => {
   const [pottyType, setPottyType] = useState('');
   const [pottyTypes, setPottyTypes] = useState([]);
   const [geocodeResult, setGeocodeResult] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
   const inputRef = useRef(null);
 
+  const { isLoaded, loadError } = useLoadGoogleMaps(
+    process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+    ['places']
+  );
+
   useEffect(() => {
-    if (!window.google) {
-      console.error('Google Maps JavaScript API not loaded.');
+    if (loadError) {
+      setErrorMessage('Failed to load Google Maps API. Please try again later.');
       return;
     }
 
-    const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current);
-    autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
-      if (place.formatted_address) {
-        setPottyAddress(place.formatted_address);
-        geocodeAddress(place.formatted_address);
-      } else {
-        console.error('Place does not contain formatted address');
-      }
-    });
-  }, []);
+    if (isLoaded) {
+      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current);
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (place.formatted_address) {
+          setPottyAddress(place.formatted_address);
+          geocodeAddress(place.formatted_address);
+        } else {
+          setErrorMessage('Selected place does not contain a formatted address.');
+        }
+      });
+    }
+  }, [isLoaded, loadError]);
 
   const geocodeAddress = (address) => {
     const geocoder = new window.google.maps.Geocoder();
@@ -41,7 +50,7 @@ const Form = () => {
           longitude: location.lng(),
         });
       } else {
-        console.error('Geocode was not successful for the following reason: ' + status);
+        setErrorMessage(`Geocode was not successful: ${status}`);
         setGeocodeResult(null);
       }
     });
@@ -54,7 +63,7 @@ const Form = () => {
         const rules = querySnapshot.docs.map((doc) => doc.data().pottyRule);
         setPottyRules(rules);
       } catch (error) {
-        console.error('Error fetching potty rules:', error);
+        setErrorMessage('Error fetching potty rules.');
       }
     };
 
@@ -64,7 +73,7 @@ const Form = () => {
         const types = querySnapshot.docs.map((doc) => doc.data().pottyType);
         setPottyTypes(types);
       } catch (error) {
-        console.error('Error fetching potty types:', error);
+        setErrorMessage('Error fetching potty types.');
       }
     };
 
@@ -76,7 +85,7 @@ const Form = () => {
     e.preventDefault();
 
     if (!geocodeResult) {
-      console.error('No geocode result available.');
+      setErrorMessage('No geocode result available.');
       return;
     }
 
@@ -99,13 +108,15 @@ const Form = () => {
       setPottyNotes('');
       setPottyType('');
       setGeocodeResult(null);
+      setErrorMessage('');
     } catch (e) {
-      console.error('Error adding document: ', e);
+      setErrorMessage(`Error adding document: ${e.message}`);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="form-container">
+      {errorMessage && <p className="error-message">{errorMessage}</p>}
       <div className="form-group">
         <label htmlFor="pottyName">Potty Name:</label>
         <input

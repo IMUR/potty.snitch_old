@@ -1,32 +1,25 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
+import useLoadGoogleMaps from '../hooks/useLoadGoogleMaps'; // Assuming your custom hook
 
 const MapComponent = () => {
-    useEffect(() => {
-        const loadScript = (src) => {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = src;
-                script.async = true;
-                script.defer = true;
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            });
-        };
+    const mapRef = useRef(null);
+    const { isLoaded, loadError } = useLoadGoogleMaps(['places']);
 
-        const initMap = () => {
-            const map = new window.google.maps.Map(document.getElementById('map'), {
+    useEffect(() => {
+        if (loadError) {
+            console.error('Failed to load Google Maps API:', loadError);
+            return;
+        }
+
+        if (isLoaded) {
+            const map = new window.google.maps.Map(mapRef.current, {
                 center: { lat: -34.397, lng: 150.644 },
                 zoom: 8,
             });
-        };
+        }
+    }, [isLoaded, loadError]);
 
-        loadScript(`https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&libraries=places`)
-            .then(() => window.google && initMap())
-            .catch((error) => console.error('Error loading Google Maps API', error));
-    }, []);
-
-    return <div id="map" style={{ height: '500px', width: '100%' }}></div>;
+    return <div ref={mapRef} style={{ height: '500px', width: '100%' }}></div>;
 };
 
 export default MapComponent;
